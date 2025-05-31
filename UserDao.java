@@ -1,46 +1,55 @@
-package com.rapo.goalgetter.data.dao;
+package com.rapo.goalgetter.ui.viewmodels;
 
+import android.app.Application;
+
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
-import androidx.room.Dao;
-import androidx.room.Insert;
-import androidx.room.Query;
-import androidx.room.Update;
+import androidx.lifecycle.MutableLiveData;
 
-import com.rapo.goalgetter.data.model.User;
+import com.rapo.goalgetter.data.model.Task;
+import com.rapo.goalgetter.data.repository.TaskRepository;
+
 import java.util.List;
 
-@Dao
-public interface UserDao {
+public class TaskViewModel extends AndroidViewModel {
+    private final TaskRepository repository;
+    private LiveData<List<Task>> tasks;
 
-    // Создание нового пользователя
-    @Insert
-    void insert(User user);
+    public TaskViewModel(@NonNull Application application) {
+        super(application);
+        repository = new TaskRepository(application);
+    }
 
-    // Обновление данных пользователя
-    @Update
-    void update(User user);
+    // Изменяем параметр на long
+    public LiveData<List<Task>> getTasksByUserId(long userId) {
+        if (tasks == null) {
+            tasks = repository.getTasksByUserId(userId);
+        }
+        return tasks;
+    }
 
-    // Получение пользователя по ID
-    @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
-    LiveData<User> getUserById(long userId);
+    public LiveData<Task> getTaskById(long taskId) {
+        return repository.getTaskById(taskId);
+    }
+//    // Изменяем параметр на long
+//    public void refreshTasks(long userId) {
+//        tasks = repository.getTasksByUserId(userId);
+//    }
 
-    // Авторизация пользователя
-    @Query("SELECT * FROM users WHERE email = :email AND password = :password LIMIT 1")
-    LiveData<User> getUserByCredentials(String email, String password);
+    public void refreshTasks(long userId) {
+        repository.refreshTasks(userId);
+    }
 
-    // Проверка существования email
-    @Query("SELECT EXISTS(SELECT 1 FROM users WHERE email = :email LIMIT 1)")
-    LiveData<Boolean> isEmailExists(String email);
+    public void insert(Task task) {
+        repository.insert(task);
+    }
 
-    // Получение всех пользователей
-    @Query("SELECT * FROM users ORDER BY id DESC")
-    LiveData<List<User>> getAllUsers();
+    public void update(Task task) {
+        repository.update(task);
+    }
 
-    // Удаление пользователя
-    @Query("DELETE FROM users WHERE id = :userId")
-    void deleteUser(long userId);
-
-    // Обновление пароля
-    @Query("UPDATE users SET password = :newPassword WHERE id = :userId")
-    void updatePassword(long userId, String newPassword);
+    public void delete(Task task) {
+        repository.delete(task);
+    }
 }
