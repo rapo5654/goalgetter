@@ -2,8 +2,10 @@ package com.rapo.goalgetter.ui.viewmodels;
 
 import android.app.Application;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
 import com.rapo.goalgetter.data.model.Task;
 import com.rapo.goalgetter.data.repository.TaskRepository;
@@ -12,16 +14,31 @@ import java.util.List;
 
 public class TaskViewModel extends AndroidViewModel {
     private final TaskRepository repository;
-    private final LiveData<List<Task>> allTasks;
+    private LiveData<List<Task>> tasks;
 
-    public TaskViewModel(Application application) {
+    public TaskViewModel(@NonNull Application application) {
         super(application);
         repository = new TaskRepository(application);
-        allTasks = repository.getAllTasks();
     }
 
-    public LiveData<List<Task>> getAllTasks() {
-        return allTasks;
+    // Изменяем параметр на long
+    public LiveData<List<Task>> getTasksByUserId(long userId) {
+        if (tasks == null) {
+            tasks = repository.getTasksByUserId(userId);
+        }
+        return tasks;
+    }
+
+    public LiveData<Task> getTaskById(long taskId) {
+        return repository.getTaskById(taskId);
+    }
+//    // Изменяем параметр на long
+//    public void refreshTasks(long userId) {
+//        tasks = repository.getTasksByUserId(userId);
+//    }
+
+    public void refreshTasks(long userId) {
+        repository.refreshTasks(userId);
     }
 
     public void insert(Task task) {
@@ -34,9 +51,5 @@ public class TaskViewModel extends AndroidViewModel {
 
     public void delete(Task task) {
         repository.delete(task);
-    }
-
-    public void deleteAll() {
-        repository.deleteAll();
     }
 }
