@@ -13,12 +13,12 @@ public class UserRepository {
     private final ExecutorService executor;
 
     public UserRepository(Application application) {
-        AppDatabase db = AppDatabase.getInstance(application);
+        // Используем правильный метод для получения экземпляра базы данных
+        AppDatabase db = AppDatabase.getDatabase(application);
         userDao = db.userDao();
         executor = Executors.newSingleThreadExecutor();
     }
 
-    // Исправленный метод
     public LiveData<User> getUserByCredentials(String email, String password) {
         return userDao.getUserByCredentials(email, password);
     }
@@ -29,5 +29,10 @@ public class UserRepository {
 
     public void registerUser(User user) {
         executor.execute(() -> userDao.insert(user));
+    }
+
+    // Добавим метод для получения ID пользователя
+    public LiveData<User> getUserById(String userId) {
+        return userDao.getUserById(userId);
     }
 }
