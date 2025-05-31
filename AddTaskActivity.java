@@ -1,125 +1,92 @@
 package com.rapo.goalgetter.ui.activities;
 
-import android.app.DatePickerDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.rapo.goalgetter.R;
 import com.rapo.goalgetter.data.model.Task;
 import com.rapo.goalgetter.ui.viewmodels.TaskViewModel;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Locale;
+public class AddTaskActivity extends AppCompatActivity { // Или TaskActivity
 
-public class AddTaskActivity extends AppCompatActivity {
-    private EditText etTitle, etDescription, etDate;
-    private Spinner spinnerPriority, spinnerColor;
-    private Calendar calendar;
+    private EditText editTextTitle, editTextDescription;
+    private Button buttonSave;
     private TaskViewModel taskViewModel;
-    private long currentUserId;
+    private Task currentTask;
+    private long userId;
+    private boolean isEditing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_task);
+        setContentView(R.layout.activity_add_task); // Убедитесь, что это правильный layout
 
+        // Инициализация ViewModel
         taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
-        initViews();
-        setupDatePicker();
-        loadCurrentUserId();
-    }
 
-    private void initViews() {
-        etTitle = findViewById(R.id.etTitle);
-        etDescription = findViewById(R.id.etDescription);
-        etDate = findViewById(R.id.etDate);
-        spinnerPriority = findViewById(R.id.spinnerPriority);
-        spinnerColor = findViewById(R.id.spinnerColor);
-        Button btnSave = findViewById(R.id.btnSave);
+        // Получение UI элементов
+        editTextTitle = findViewById(R.id.etTitle);
+        editTextDescription = findViewById(R.id.etDescription);
+        buttonSave = findViewById(R.id.btnSave);
 
-        btnSave.setOnClickListener(v -> saveTask());
-    }
-
-    private void setupDatePicker() {
-        calendar = Calendar.getInstance();
-        etDate.setOnClickListener(v -> showDatePicker());
-    }
-
-    private void loadCurrentUserId() {
+        // Получение ID пользователя
         SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
-        currentUserId = prefs.getLong("user_id", -1);
-    }
+        userId = prefs.getLong("user_id", -1L);
 
-    private void showDatePicker() {
-        new DatePickerDialog(
-                this,
-                (view, year, month, dayOfMonth) -> {
-                    calendar.set(year, month, dayOfMonth);
-                    updateDateLabel();
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        ).show();
-    }
-
-    private void updateDateLabel() {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-        etDate.setText(sdf.format(calendar.getTime()));
-    }
-
-    private int getSelectedColor() {
-        int position = spinnerColor.getSelectedItemPosition();
-        switch (position) {
-            case 0: return getColor(R.color.red);
-            case 1: return getColor(R.color.green);
-            case 2: return getColor(R.color.blue);
-            default: return getColor(R.color.white);
+        // Проверяем, редактируем ли существующую задачу
+        long taskId = getIntent().getLongExtra("taskId", -1L);
+        if (taskId != -1L) {
+            isEditing = true;
+            loadTask(taskId);
+        } else {
+            currentTask = new Task();
+            currentTask.setUserId(userId);
+            currentTask.setCompleted(false);
         }
+
+        buttonSave.setOnClickListener(v -> saveTask());
+    }
+
+    private void loadTask(long taskId) {
+        taskViewModel.getTaskById(taskId).observe(this, new Observer<Task>() {
+            @Override
+            public void onChanged(Task task) {
+                if (task != null) {
+                    currentTask = task;
+                    editTextTitle.setText(task.getTitle());
+                    editTextDescription.setText(task.getDescription());
+                }
+            }
+        });
     }
 
     private void saveTask() {
-        String title = etTitle.getText().toString().trim();
-        String description = etDescription.getText().toString().trim();
-        String date = etDate.getText().toString().trim();
-        int priority = spinnerPriority.getSelectedItemPosition() + 1;
-        int color = getSelectedColor();
+        String title = editTextTitle.getText().toString().trim();
+        String description = editTextDescription.getText().toString().trim();
 
         if (title.isEmpty()) {
-            showToast("Введите название задачи");
+            editTextTitle.setError("Title cannot be empty");
             return;
         }
 
-        if (date.isEmpty()) {
-            showToast("Выберите дату");
-            return;
+        currentTask.setTitle(title);
+        currentTask.setDescription(description);
+
+        if (isEditing) {
+            taskViewModel.update(currentTask);
+            Toast.makeText(this, "Task updated", Toast.LENGTH_SHORT).show();
+        } else {
+            taskViewModel.insert(currentTask);
+            Toast.makeText(this, "Task added", Toast.LENGTH_SHORT).show();
         }
 
-        Task newTask = new Task(
-                title,
-                description,
-                false,  // isCompleted
-                date,    // dueDate
-                priority,
-                color,
-                System.currentTimeMillis(), // createdAt
-                currentUserId
-        );
-
-        taskViewModel.insert(newTask);
-        showToast("Задача сохранена");
-        setResult(RESULT_OK);
         finish();
-    }
-
-    private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }
