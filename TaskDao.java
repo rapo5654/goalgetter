@@ -25,12 +25,22 @@ public interface TaskDao {
     @Query("DELETE FROM tasks")
     void deleteAll();
 
-    @Query("SELECT * FROM tasks ORDER BY created_at DESC") // ← Исправлено!
+    // Исправлено: используем существующие колонки
+    @Query("SELECT * FROM tasks ORDER BY date DESC")
     LiveData<List<Task>> getAllTasks();
 
-    @Query("SELECT * FROM tasks WHERE is_completed = 0")
+    // Исправлено: используем правильное имя колонки completed
+    @Query("SELECT * FROM tasks WHERE completed = 0")
     LiveData<List<Task>> getActiveTasks();
 
     @Query("SELECT * FROM tasks WHERE title LIKE :searchQuery")
     LiveData<List<Task>> searchTasks(String searchQuery);
+
+    // Добавляем метод для получения задачи по ID
+    @Query("SELECT * FROM tasks WHERE taskId = :taskId")
+    LiveData<Task> getTaskById(long taskId);
+
+    // Добавляем метод для получения задач пользователя
+    @Query("SELECT * FROM tasks WHERE userId = :userId")
+    LiveData<List<Task>> getTasksByUserId(long userId);
 }
