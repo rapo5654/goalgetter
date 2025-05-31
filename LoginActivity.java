@@ -28,6 +28,7 @@ public class LoginActivity extends AppCompatActivity {
         initializeViews();
         setupViewModel();
         setupListeners();
+
     }
 
     private void initializeViews() {
